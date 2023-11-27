@@ -23,7 +23,6 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-
         const usersCollection = client.db('bistroBossdb').collection('users');
 
 
@@ -31,6 +30,17 @@ async function run() {
         app.get('/users', async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
+        })
+
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const query = { email: user.email }
+            const existingUser = await usersCollection.findOne(query);
+            if (existingUser) {
+                return res.send({ message: 'User already exists', insertedId: null })
+            }
+            const result = await usersCollection.insertOne(user);
+            res.send(result)
         })
 
 

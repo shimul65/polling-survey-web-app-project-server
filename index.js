@@ -89,7 +89,35 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/users/:id',  async (req, res) => {
+        app.get('/users/admin/:email', verifyToken, async (req, res) => {
+            const email = req.params.email;
+            if (email !== req.user.email) {
+                return res.status(403).send({ message: ' forbidden access' });
+            }
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            let admin = false;
+            if (user) {
+                admin = user?.role === 'Admin';
+            }
+            res.send({ admin });
+        })
+
+        app.get('/users/surveyor/:email', verifyToken, async (req, res) => {
+            const email = req.params.email;
+            if (email !== req.user.email) {
+                return res.status(403).send({ message: ' forbidden access' });
+            }
+            const query = { email: email };
+            const user = await usersCollection.findOne(query);
+            let surveyor = false;
+            if (user) {
+                surveyor = user?.role === 'Surveyor';
+            }
+            res.send({ surveyor });
+        })
+
+        app.patch('/users/:id', verifyToken,  async (req, res) => {
             const updateStatus = req.body;
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
@@ -114,7 +142,7 @@ async function run() {
             res.send(result)
         })
 
-        app.delete('/users/:id',   async (req, res) => {
+        app.delete('/users/:id', verifyToken,  async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await usersCollection.deleteOne(query);

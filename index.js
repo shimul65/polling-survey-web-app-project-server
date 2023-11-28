@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const app = express();
@@ -12,6 +12,9 @@ const port = process.env.PORT || 5066;
 app.use(cors({
     origin: [
         'http://localhost:5173',
+        // 'https://survey-app-assignment-shimul.web.app/',
+        // 'https://survey-app-assignment-shimul.firebaseapp.com/',
+        // 'https://survey-app-assignment-shimul.surge.sh/',
     ],
     credentials: true
 }));
@@ -86,6 +89,20 @@ async function run() {
             res.send(result);
         })
 
+        app.patch('/users/:id',  async (req, res) => {
+            const updateStatus = req.body;
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const options = { upsert: true };
+            const updateRole = {
+                $set: {
+                    role: updateStatus.role,
+                }
+            }
+            const result = await usersCollection.updateOne(query, updateRole, options);
+            res.send(result);
+        })
+
         app.post('/users', async (req, res) => {
             const user = req.body;
             const query = { email: user.email }
@@ -95,6 +112,13 @@ async function run() {
             }
             const result = await usersCollection.insertOne(user);
             res.send(result)
+        })
+
+        app.delete('/users/:id',   async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await usersCollection.deleteOne(query);
+            res.send(result);
         })
 
 

@@ -37,6 +37,8 @@ async function run() {
     try {
 
         const usersCollection = client.db('surveyDb').collection('users');
+        const surveyCollection = client.db('surveyDb').collection('surveys');
+        const paymentCollection = client.db('surveyDb').collection('payments');
 
 
         //jwt related api
@@ -65,9 +67,7 @@ async function run() {
 
         // token verify middleware
         const verifyToken = async (req, res, next) => {
-
             const token = req.cookies?.token;
-
             if (!token) {
                 return res.status(401).send({ message: 'unauthorized access' })
             }
@@ -81,7 +81,6 @@ async function run() {
                 next();
             })
         }
-
 
 
         //users related api
@@ -118,10 +117,16 @@ async function run() {
             res.send({ surveyor });
         })
 
-        app.patch('/users/:id', verifyToken, async (req, res) => {
+        app.patch('/users/:state', verifyToken, async (req, res) => {
             const updateStatus = req.body;
-            const id = req.params.id;
-            const query = { _id: new ObjectId(id) };
+            const state = req.params.state;
+            let query = {}
+            if (state === req.user.email) {
+                query = { email: req.user.email }
+            }
+            else {
+                query = { _id: new ObjectId(state) };
+            }
             const options = { upsert: true };
             const updateRole = {
                 $set: {
@@ -151,6 +156,19 @@ async function run() {
         })
 
 
+
+        //survey related api
+        app.post('/surveys', verifyToken, async (req, res) => {
+            const newSurvey = {
+                ...req.body,
+                timestamp: new Date()
+            };
+            const result = await surveyCollection.insertOne(newSurvey)
+            res.send(result);
+        })
+
+
+
         // payment intent
         app.post("/create-payment-intent", async (req, res) => {
             const { price } = req.body;
@@ -169,25 +187,15 @@ async function run() {
             });
         });
 
-        app.get('/payments/:email', verifyToken, async (req, res) => {
-            const query = { email: req.params.email }
-            if (req.params.email !== req.user.email) {
-                return res.status(403).send({ message: ' forbidden access' });
-            }
-            const result = await paymentCollection.find(query).toArray();
+        app.get('/payments', verifyToken, async (req, res) => {
+            const result = await paymentCollection.find().toArray();
             res.send(result);
         })
 
         app.post('/payments', async (req, res) => {
             const payment = req.body;
-            const paymentResult = await paymentCollection.insertOne(payment);
-            const query = {
-                _id: {
-                    $in: payment.cartIds.map(id => new ObjectId(id))
-                }
-            }
-            const deleteResult = await cartCollection.deleteMany(query)
-            res.send({ paymentResult, deleteResult });
+            const result = await paymentCollection.insertOne(payment);
+            res.send(result);
         })
 
 

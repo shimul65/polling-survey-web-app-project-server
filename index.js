@@ -82,6 +82,18 @@ async function run() {
             })
         }
 
+        // use verify admin after verify token
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.user.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            const isAdmin = user?.role === 'Admin';
+            if (!isAdmin) {
+                return res.status(403).send({ message: 'forbidden access...' });
+            }
+            next();
+        }
+
 
         //users related api
         app.get('/users', verifyToken, async (req, res) => {
@@ -117,7 +129,7 @@ async function run() {
             res.send({ surveyor });
         })
 
-        app.patch('/users/:state', verifyToken, async (req, res) => {
+        app.patch('/users/:state', verifyToken, verifyAdmin, async (req, res) => {
             const updateStatus = req.body;
             const state = req.params.state;
             let query = {}
@@ -148,7 +160,7 @@ async function run() {
             res.send(result)
         })
 
-        app.delete('/users/:id', verifyToken, async (req, res) => {
+        app.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await usersCollection.deleteOne(query);
@@ -158,6 +170,40 @@ async function run() {
 
 
         //survey related api
+        app.get('/surveys', verifyToken, async (req, res) => {
+            const surveyorEmail = req.query?.email;
+            const query = {
+                email: surveyorEmail
+            }
+            const result = await surveyCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        app.get('/surveys/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await surveyCollection.findOne(query);
+            res.send(result);
+        })
+
+        app.patch('/surveys/:id', async (req, res) => {
+            const updateSurvey = req.body;
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const options = { upsert: true };
+            const newMenu = {
+                $set: {
+                    title: updateSurvey.title,
+                    question: updateSurvey.question,
+                    image: updateSurvey.image,
+                    category: updateSurvey.category,
+                    deadline: updateSurvey.deadline,
+                }
+            }
+            const result = await surveyCollection.updateOne(query, newMenu, options);
+            res.send(result);
+        })
+
         app.post('/surveys', verifyToken, async (req, res) => {
             const newSurvey = {
                 ...req.body,

@@ -38,6 +38,7 @@ async function run() {
 
         const usersCollection = client.db('surveyDb').collection('users');
         const surveyCollection = client.db('surveyDb').collection('surveys');
+        const publishedSurveyCollection = client.db('surveyDb').collection('publishedSurveys');
         const paymentCollection = client.db('surveyDb').collection('payments');
 
 
@@ -172,8 +173,11 @@ async function run() {
         //survey related api
         app.get('/surveys', verifyToken, async (req, res) => {
             const surveyorEmail = req.query?.email;
-            const query = {
-                email: surveyorEmail
+            let query = {}
+            if (surveyorEmail) {
+                query = {
+                    email: surveyorEmail
+                }
             }
             const result = await surveyCollection.find(query).toArray();
             res.send(result);
@@ -191,16 +195,18 @@ async function run() {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const options = { upsert: true };
-            const newMenu = {
+            const newSurvey = {
                 $set: {
                     title: updateSurvey.title,
                     question: updateSurvey.question,
                     image: updateSurvey.image,
                     category: updateSurvey.category,
                     deadline: updateSurvey.deadline,
+                    status: updateSurvey.status,
+                    unpublishedStatus: updateSurvey.unpublishedStatus
                 }
             }
-            const result = await surveyCollection.updateOne(query, newMenu, options);
+            const result = await surveyCollection.updateOne(query, newSurvey, options);
             res.send(result);
         })
 
@@ -210,6 +216,19 @@ async function run() {
                 timestamp: new Date()
             };
             const result = await surveyCollection.insertOne(newSurvey)
+            res.send(result);
+        })
+
+
+        // publishedSurveys related api
+        app.get('/publishedSurveys', async (req, res) => {
+            const result = await publishedSurveyCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.post('/publishedSurveys', verifyToken, async (req, res) => {
+            const publishedSurvey = req.body
+            const result = await publishedSurveyCollection.insertOne(publishedSurvey)
             res.send(result);
         })
 

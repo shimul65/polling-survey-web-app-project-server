@@ -13,9 +13,9 @@ const port = process.env.PORT || 5066;
 app.use(cors({
     origin: [
         'http://localhost:5173',
-        // 'https://survey-app-assignment-shimul.web.app/',
-        // 'https://survey-app-assignment-shimul.firebaseapp.com/',
-        // 'https://survey-app-assignment-shimul.surge.sh/',
+        'https://survey-app-assignment-shimul.web.app',
+        'https://survey-app-assignment-shimul.firebaseapp.com',
+        'https://survey-app-assignment-shimul.surge.sh',
     ],
     credentials: true
 }));
@@ -226,7 +226,14 @@ async function run() {
             res.send(result);
         })
 
-        app.post('/publishedSurveys', verifyToken, async (req, res) => {
+        app.get('/publishedSurveys/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await publishedSurveyCollection.findOne(query);
+            res.send(result);
+        })
+
+        app.post('/publishedSurveys', async (req, res) => {
             const publishedSurvey = req.body
             const result = await publishedSurveyCollection.insertOne(publishedSurvey)
             res.send(result);

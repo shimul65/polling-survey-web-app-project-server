@@ -12,10 +12,10 @@ const port = process.env.PORT || 5066;
 // middleware
 app.use(cors({
     origin: [
-        'http://localhost:5173',
         'https://survey-app-assignment-shimul.web.app',
         'https://survey-app-assignment-shimul.firebaseapp.com',
         'https://survey-app-assignment-shimul.surge.sh',
+        'http://localhost:5173',
     ],
     credentials: true
 }));
@@ -130,7 +130,7 @@ async function run() {
             res.send({ surveyor });
         })
 
-        app.patch('/users/:state', verifyToken, verifyAdmin, async (req, res) => {
+        app.patch('/users/:state', verifyToken, async (req, res) => {
             const updateStatus = req.body;
             const state = req.params.state;
             let query = {}
@@ -230,6 +230,27 @@ async function run() {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await publishedSurveyCollection.findOne(query);
+            res.send(result);
+        })
+
+        app.patch('/publishedSurveys/:id', verifyToken, async (req, res) => {
+            const updatePublishedSurvey = req.body;
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const options = { upsert: true };
+            const newPublishedSurvey = {
+                $set: {
+                    yesVote: updatePublishedSurvey.yesVote,
+                    noVote: updatePublishedSurvey.noVote,
+                    likeCount: updatePublishedSurvey.likeCount,
+                    dislikeCount: updatePublishedSurvey.dislikeCount,
+                    yesVoteGiven: updatePublishedSurvey.yesVoteGiven,
+                    noVoteGiven: updatePublishedSurvey.noVoteGiven,
+                    likeGiven: updatePublishedSurvey.likeGiven,
+                    disLikeGiven: updatePublishedSurvey.disLikeGiven,
+                }
+            }
+            const result = await publishedSurveyCollection.updateOne(query, newPublishedSurvey, options);
             res.send(result);
         })
 
